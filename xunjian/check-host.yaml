@@ -1,0 +1,31 @@
+---
+- hosts:  all
+  remote_user: root
+
+  tasks:
+  - name: copy script to server
+    copy: src=./check-host.sh dest=./check-host.sh mode=755
+
+  - name: delete previous log
+    shell: rm -f /root/log/*;rm -f /HostDailyCheck*
+
+  - name: run script
+    become: yes
+    become_method:  su
+    shell:  /bin/bash -x /root/check-host.sh
+
+  - name: find log
+    shell: (cd /root/log; find . -maxdepth 1 -type f) | cut -d'/' -f2
+    register: files_to_copy
+
+  - name: move log
+    shell: mv /root/log/* /
+
+  - name: get log
+    fetch: src=/{{ item }} dest=/root/log/
+    with_items: files_to_copy.stdout_lines
+
+  - name: delete cache
+    become: yes
+    become_method:  su
+    shell:  rm -f /root/check-host.sh
