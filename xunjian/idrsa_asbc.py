@@ -24,8 +24,12 @@ userpassword_kvs = []
 while count < len(host_ips):
 	userpassword_kvs.append("".join(host_ips[count]+" ansible_ssh_user=" + host_usernames[count][0] + " ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa" ))
 	count += 1
+#mn_ip=os.popen('cat /usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/zstack.properties |grep management').read().split(' = ')[1].split("\n")[0]
+#print mn_ip
 kvs_str = "\n".join(userpassword_kvs)
+# + "\n" +mn_ip+ " ansible_ssh_user=root ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa"
 
 file_asbc = open('ansible.conf','w')
 file_asbc.write(kvs_str)
 file_asbc.close()
+os.system("sort -k2n ansible.conf|uniq")

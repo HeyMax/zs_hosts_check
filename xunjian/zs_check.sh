@@ -22,6 +22,8 @@ export ZS_SERVER_IP=$1
 #cat /ZSPySDK.2.2/VMTEST_README
 
 python -u ./zs_check.py | tee -a /root/log/MN_log
+python -u ./qemukvm_checker.py | tee -a /root/log/MN_log
+python -u ./zs_mn_TSC.py | tee -a /root/log/MN_log
 sed -i 's/\x1b\[3;J\x1b\[H\x1b\[2J//' /root/log/MN_log
 #recover log.py
 mv -f ./log.py.bak /var/lib/zstack/virtualenv/zstackcli/lib/python2.7/site-packages/zstacklib/utils/log.py

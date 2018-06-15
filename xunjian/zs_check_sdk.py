@@ -289,7 +289,7 @@ def print_highLoadHosts_list(tc,tm,td,host_cpuhl_list,host_memhl_list,host_diskh
 		print "无磁盘占用超过%d%%的物理机" % td
 
 def print_unattached_datavol_list():
-	unAttachedDVList = query_vol(conditions=[{'name':'vmInstanceUuid','op':'is null','value':""},{'name':'type','op':'=','value':'Data'}]).inventories
+	unAttachedDVList = query_vol(conditions=[{'name':'vmInstanceUuid','op':'is null'},{'name':'type','op':'=','value':'Data'}]).inventories
 	count = 1
 	title("未加载状态的云盘")
 	if len(unAttachedDVList):

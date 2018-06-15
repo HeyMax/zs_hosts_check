@@ -1,9 +1,8 @@
 #!/bin/bash
 #主机信息巡检
 #version 2018.04.17
+#http://blog.51cto.com/chenhao6/1962576
 #当前脚本适用于CentOS 7.X
-
-
 
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
 source /etc/profile
@@ -20,7 +19,6 @@ PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
 LOGPATH="$PROGPATH/log"
 [ -e $LOGPATH ] || mkdir $LOGPATH
 RESULTFILE="$LOGPATH/HostDailyCheck-`hostname`-`date +%Y%m%d`.txt"
-
 
 #定义报表的全局变量
 report_DateTime=""    #日期 ok
@@ -72,6 +70,7 @@ report_UsedMemory=""     #已用内存
 report_UsedSwap=""       #已用swap
 report_UsedSystemDisk="" #已用系统盘
 report_CPU_Load=""       #CPU负载
+report_Qemu_Kvm_Namelist="" #qemu-kvm进程namelist ok
 function version(){
     echo ""
     echo ""
@@ -96,6 +95,24 @@ function getCpuStatus(){
     report_CPUs=$Virt_CPUs    #CPU数量
     report_CPUType=$CPU_Type  #CPU类型
     report_Arch=$CPU_Arch     #CPU架构	
+}
+
+function getQemuKvmPNameList(){
+    echo ""
+    echo ""
+    echo "############################ qemu-kvm进程namelist #############################"
+    NameList=$(ps -ef|grep qemu-kvm |grep -o '\-name [0-9a-z]\{32\}'|grep -o '[0-9a-z]\{32\}')
+    echo "$NameList"
+    report_Qemu_Kvm_Namelist=$NameList #qemu-kvm进程
+}
+
+function getVirshListRunningNPaused(){
+   echo ""
+   echo ""
+   echo "############################ virsh list(Running&Paused) ############################"
+   VirshList=$(virsh list |egrep 'running|paused')
+   echo "$VirshList"
+   report_Virsh_List=$VirshList
 }
 
 function getMemStatus(){
@@ -297,11 +314,22 @@ function getNetworkStatus(){
 function getListenStatus(){
     echo ""
     echo ""
-    echo "############################ 监听检查 ############################"
-    TCPListen=$(ss -ntul | column -t)
+    echo "############################ 端口检查 ############################"
+    TCPListen=$(netstat -anp|egrep '3306.*mysqld'|head -n1;
+	            netstat -anp|egrep '123.*ntpd'|head -n1;
+	            netstat -anp|egrep '9090.*prometheus'|head -n1;
+				netstat -anp|egrep '9091.*pushgateway'|head -n1;
+				netstat -anp|egrep '7758.*python'|head -n1;
+				netstat -anp|egrep '5900.*qemu-kvm'|head -n1;
+				netstat -anp|egrep '7171.*'|head -n1;
+				netstat -anp|egrep '5000.*java'|head -n1;
+				netstat -anp|egrep '5443.*'|head -n1;
+				netstat -anp|egrep '7762.*'|head -n1;
+				netstat -anp|egrep '7761.*'|head -n1)
     echo "$TCPListen"
     #报表信息
-    report_Listen="$(echo "$TCPListen"| sed '1d' | awk '/tcp/ {print $5}' | awk -F: '{print $NF}' | sort | uniq | wc -l)"
+	report_Listen="$(echo "$TCPListen")"
+    # report_Listen="$(echo "$TCPListen"| sed '1d' | awk '/tcp/ {print $5}' | awk -F: '{print $NF}' | sort | uniq | wc -l)"
 }
 
 function getCronStatus(){
@@ -329,7 +357,6 @@ function getCronStatus(){
     report_Crontab="$Crontab"    #计划任务数
 }
 function getHowLongAgo(){
-    # 计算一个时间戳离现在有多久了
     datetime="$*"
     [ -z "$datetime" ] && echo "错误的参数：getHowLongAgo() $*"
     Timestamp=$(date +%s -d "$datetime")    #转化为时间戳
@@ -701,27 +728,26 @@ function getNTPStatus(){
     echo ""
     echo "############################ NTP检查 #############################"
     if [ -e /etc/ntp.conf ];then
-        echo "服务状态：$(getState ntpd)"
+        echo "NTP服务状态：$(getState ntpd)"
         echo ""
-        echo "/etc/ntp.conf"
-        echo "-------------"
-        cat /etc/ntp.conf 2>/dev/null | grep -v "^#" | sed '/^$/d'
+        # echo "/etc/ntp.conf"
+        # echo "-------------"
+        # cat /etc/ntp.conf 2>/dev/null | grep -v "^#" | sed '/^$/d'
+		ntpq -np
     fi
     #报表信息
     report_NTP="$(getState ntpd)"
 }
 
-function checksysload(){
+function getChronyStatus(){
     #NTP服务状态，当前时间，配置等
     echo ""
     echo ""
-    echo "############################ NTP检查 #############################"
-    if [ -e /etc/ntp.conf ];then
-        echo "服务状态：$(getState ntpd)"
+    echo "############################ Chrony检查 #############################"
+    if [ -e /etc/chrony.conf ];then
+        echo "Chrony服务状态：$(getState chronyd)"
         echo ""
-        echo "/etc/ntp.conf"
-        echo "-------------"
-        cat /etc/ntp.conf 2>/dev/null | grep -v "^#" | sed '/^$/d'
+        chronyc sources -v
     fi
     #报表信息
     report_NTP="$(getState ntpd)"
@@ -729,56 +755,56 @@ function checksysload(){
 }
 
 
-function uploadHostDailyCheckReport(){
-    json="{
-        \"DateTime\":\"$report_DateTime\",
-        \"Hostname\":\"$report_Hostname\",
-        \"OSRelease\":\"$report_OSRelease\",
-        \"Kernel\":\"$report_Kernel\",
-        \"Language\":\"$report_Language\",
-        \"LastReboot\":\"$report_LastReboot\",
-        \"Uptime\":\"$report_Uptime\",
-        \"CPUs\":\"$report_CPUs\",
-        \"CPUType\":\"$report_CPUType\",
-        \"Arch\":\"$report_Arch\",
-        \"MemTotal\":\"$report_MemTotal\",
-        \"MemFree\":\"$report_MemFree\",
-        \"MemUsedPercent\":\"$report_MemUsedPercent\",
-        \"DiskTotal\":\"$report_DiskTotal\",
-        \"DiskFree\":\"$report_DiskFree\",
-        \"DiskUsedPercent\":\"$report_DiskUsedPercent\",
-        \"InodeTotal\":\"$report_InodeTotal\",
-        \"InodeFree\":\"$report_InodeFree\",
-        \"InodeUsedPercent\":\"$report_InodeUsedPercent\",
-        \"IP\":\"$report_IP\",
-        \"MAC\":\"$report_MAC\",
-        \"Gateway\":\"$report_Gateway\",
-        \"DNS\":\"$report_DNS\",
-        \"Listen\":\"$report_Listen\",
-        \"Selinux\":\"$report_Selinux\",
-        \"Firewall\":\"$report_Firewall\",
-        \"USERs\":\"$report_USERs\",
-        \"USEREmptyPassword\":\"$report_USEREmptyPassword\",
-        \"USERTheSameUID\":\"$report_USERTheSameUID\",
-        \"PasswordExpiry\":\"$report_PasswordExpiry\",
-        \"RootUser\":\"$report_RootUser\",
-        \"Sudoers\":\"$report_Sudoers\",
-        \"SSHAuthorized\":\"$report_SSHAuthorized\",
-        \"SSHDProtocolVersion\":\"$report_SSHDProtocolVersion\",
-        \"SSHDPermitRootLogin\":\"$report_SSHDPermitRootLogin\",
-        \"DefunctProsess\":\"$report_DefunctProsess\",
-        \"SelfInitiatedService\":\"$report_SelfInitiatedService\",
-        \"SelfInitiatedProgram\":\"$report_SelfInitiatedProgram\",
-        \"RuningService\":\"$report_RuningService\",
-        \"Crontab\":\"$report_Crontab\",
-        \"Syslog\":\"$report_Syslog\",
-        \"Libvirtd\":\"$report_Libvirtd\",
-        \"NTP\":\"$report_NTP\",
-        \"JDK\":\"$report_JDK\"
-    }"
-    #echo "$json" 
-    curl -l -H "Content-type: application/json" -X POST -d "$json" "$uploadHostDailyCheckReportApi" 2>/dev/null
-}
+# function uploadHostDailyCheckReport(){
+    # json="{
+        # \"DateTime\":\"$report_DateTime\",
+        # \"Hostname\":\"$report_Hostname\",
+        # \"OSRelease\":\"$report_OSRelease\",
+        # \"Kernel\":\"$report_Kernel\",
+        # \"Language\":\"$report_Language\",
+        # \"LastReboot\":\"$report_LastReboot\",
+        # \"Uptime\":\"$report_Uptime\",
+        # \"CPUs\":\"$report_CPUs\",
+        # \"CPUType\":\"$report_CPUType\",
+        # \"Arch\":\"$report_Arch\",
+        # \"MemTotal\":\"$report_MemTotal\",
+        # \"MemFree\":\"$report_MemFree\",
+        # \"MemUsedPercent\":\"$report_MemUsedPercent\",
+        # \"DiskTotal\":\"$report_DiskTotal\",
+        # \"DiskFree\":\"$report_DiskFree\",
+        # \"DiskUsedPercent\":\"$report_DiskUsedPercent\",
+        # \"InodeTotal\":\"$report_InodeTotal\",
+        # \"InodeFree\":\"$report_InodeFree\",
+        # \"InodeUsedPercent\":\"$report_InodeUsedPercent\",
+        # \"IP\":\"$report_IP\",
+        # \"MAC\":\"$report_MAC\",
+        # \"Gateway\":\"$report_Gateway\",
+        # \"DNS\":\"$report_DNS\",
+        # \"Listen\":\"$report_Listen\",
+        # \"Selinux\":\"$report_Selinux\",
+        # \"Firewall\":\"$report_Firewall\",
+        # \"USERs\":\"$report_USERs\",
+        # \"USEREmptyPassword\":\"$report_USEREmptyPassword\",
+        # \"USERTheSameUID\":\"$report_USERTheSameUID\",
+        # \"PasswordExpiry\":\"$report_PasswordExpiry\",
+        # \"RootUser\":\"$report_RootUser\",
+        # \"Sudoers\":\"$report_Sudoers\",
+        # \"SSHAuthorized\":\"$report_SSHAuthorized\",
+        # \"SSHDProtocolVersion\":\"$report_SSHDProtocolVersion\",
+        # \"SSHDPermitRootLogin\":\"$report_SSHDPermitRootLogin\",
+        # \"DefunctProsess\":\"$report_DefunctProsess\",
+        # \"SelfInitiatedService\":\"$report_SelfInitiatedService\",
+        # \"SelfInitiatedProgram\":\"$report_SelfInitiatedProgram\",
+        # \"RuningService\":\"$report_RuningService\",
+        # \"Crontab\":\"$report_Crontab\",
+        # \"Syslog\":\"$report_Syslog\",
+        # \"Libvirtd\":\"$report_Libvirtd\",
+        # \"NTP\":\"$report_NTP\",
+        # \"JDK\":\"$report_JDK\"
+    # }"
+    # #echo "$json" 
+    # curl -l -H "Content-type: application/json" -X POST -d "$json" "$uploadHostDailyCheckReportApi" 2>/dev/null
+# }
 
 function check(){
     version
@@ -805,7 +831,10 @@ function check(){
     getListenStatus
     getSyslogStatus
     getNTPStatus
+	getChronyStatus
     listLogInfo
+	getVirshListRunningNPaused
+	getQemuKvmPNameList
 }
 
 

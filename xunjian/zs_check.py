@@ -16,16 +16,16 @@ import datetime
 #exec
 if __name__ == "__main__":
 	#Hosts_thresholds
-	htc = 20
-	htm = 50
-	htd = 70
+	htc = 80
+	htm = 80
+	htd = 80
 	#HLHostsLists
 	hl_hosts_lists = check.get_highLoadHosts(htc,htm,htd)
 	cpu_hl_hosts_list = hl_hosts_lists['host_cpuhl_list']
 	mem_hl_hosts_list = hl_hosts_lists['host_memhl_list']
 	disk_hl_hosts_list = hl_hosts_lists['host_diskhl_list']
 	#cpuHL_Vm_List
-	vtc = 1
+	vtc = 80
 	cpu_hl_vm_list = check.get_cpuOccupancyRateHigh_vm(vtc)
 	#datetime
 	datetime = datetime.datetime.now()
@@ -90,4 +90,4 @@ if __name__ == "__main__":
 	#print_abnomalStateVm_lists
 	resultPrintABVMAll = check.print_abnormalStateVm_lists()	
 	#done
-	print "\n管理节点巡检完成\n管理节点巡检结果存放于：/root/log/MN_log"
+	#print "\n管理节点巡检完成\n管理节点巡检结果存放于：/root/log/MN_log"
