@@ -31,11 +31,13 @@ else:
 
 
 print "\n############################ 物理机NTP服务检查 ############################"
-for index in range(0, len(host_ntp_servers)):
-    host_ntp_servers_kv[host_ntp_servers[index].split('*')[0]] = host_ntp_servers[index].split('*')[1]
-    print host_ntp_servers[index].split('*')[0] + ' NTPServer: ' + host_ntp_servers[index].split('*')[1]	
+if len(host_ntp_servers):
+	for index in range(0, len(host_ntp_servers)):
+		host_ntp_servers_kv[host_ntp_servers[index].split('*')[0]] = host_ntp_servers[index].split('*')[1]
+		print host_ntp_servers[index].split('*')[0] + ' NTPServer: ' + host_ntp_servers[index].split('*')[1]	
 
 print "\n############################ 物理机Chrony服务检查 ############################"
-for index in range(0, len(host_chrony_servers), 2):
-    host_chrony_servers_kv[host_chrony_servers[index]] = host_chrony_servers[index + 1].split('                       ')[0]
-    print host_chrony_servers[index] + ' ChronyServer: ' + host_chrony_servers[index + 1].split('                       ')[0]
+if len(host_chrony_servers) - 1:
+	for index in range(0, len(host_chrony_servers), 2):
+		host_chrony_servers_kv[host_chrony_servers[index]] = host_chrony_servers[index + 1].split('                       ')[0]
+		print host_chrony_servers[index] + ' ChronyServer: ' + host_chrony_servers[index + 1].split('                       ')[0]

@@ -32,6 +32,12 @@ if __name__ == "__main__":
 	os.system('clear')
 	print "############################ 管理节点巡检 ############################"
 	print "巡检日期:%s" % datetime
+	
+	#Resources OverView
+	check.zs_overview()
+	time.sleep(10)
+	os.system('clear')
+	
 	#QueryByLastOpDate_VM
 	resultDateQueryVm = check.query_byLastOpDate_vm()
 	time.sleep(10)

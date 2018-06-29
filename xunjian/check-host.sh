@@ -722,8 +722,20 @@ function getSSHStatus(){
     report_SSHDProtocolVersion="$Protocol_Version"    #SSH协议版本
     report_SSHDPermitRootLogin="$PermitRootLogin"    #允许root远程登录
 }
+
+function getHardwareinformation(){
+	#硬件信息
+	echo ""
+    echo ""
+    echo "############################ 系统信息概览	#############################"
+	echo -e "\nHostname:\^"$(hostname)\
+		"BIOS:\^"$(dmidecode -s bios-vendor) $(dmidecode -s bios-version) $(dmidecode -s bios-release-date)\
+		"\nOS:\^"$(cat /etc/redhat-release),$(uname -srm)\
+		"\nNetwork:\^"$(lspci|grep network)|column -ts "\^"
+}
+
 function getNTPStatus(){
-    #NTP服务状态，当前时间，配置等
+	#NTP服务状态，当前时间，配置等
     echo ""
     echo ""
     echo "############################ NTP检查 #############################"
@@ -740,7 +752,7 @@ function getNTPStatus(){
 }
 
 function getChronyStatus(){
-    #NTP服务状态，当前时间，配置等
+    #Chrony服务状态，当前时间，配置等
     echo ""
     echo ""
     echo "############################ Chrony检查 #############################"
@@ -809,6 +821,7 @@ function getChronyStatus(){
 function check(){
     version
     getSystemStatus
+	getHardwareinformation
     getMNStatus
     getLibvirtdStatus
     getHealthStatus

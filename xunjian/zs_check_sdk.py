@@ -26,7 +26,7 @@ def unit_rec(num):
 	if num == 0:
 		uted_num = '0B'
 	else:
-		for k,v in sorted(units.items(),key=lambda x:x[1],reverse=True):
+		for k,v in sorted(units.items(), key=lambda x:x[1], reverse=True):
 			#print k
 			if int(int(num)/v) > 0 :
 				uted_num = str(round(int(num)/v,2)) + k
@@ -34,49 +34,49 @@ def unit_rec(num):
 	return uted_num
 	
 #def_query_vm
-def query_vm(conditions=[],parameters=[]):
+def query_vm(conditions=[], parameters=[]):
 	action = api_actions.QueryVmInstanceAction()
 	action.conditions = conditions
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
 	
-def query_primarystorage(conditions=[],parameters=[]):
+def query_primarystorage(conditions=[], parameters=[]):
 	action = api_actions.QueryPrimaryStorageAction()
 	action.conditions = conditions 
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt 
 
-def query_backupstorage(conditions=[],parameters=[]):
+def query_backupstorage(conditions=[], parameters=[]):
 	action = api_actions.QueryBackupStorageAction()
 	action.conditions = conditions
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
 	
-def query_vol(conditions=[],parameters=[]):
+def query_vol(conditions=[], parameters=[]):
 	action = api_actions.QueryVolumeAction()
 	action.conditions = conditions
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
 
-def query_img(conditions=[],parameters=[]):
+def query_img(conditions=[], parameters=[]):
 	action = api_actions.QueryImageAction()
 	action.conditions = conditions
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt 
 	
-def query_host(conditions=[],parameters=[]):
+def query_host(conditions=[], parameters=[]):
 	action = api_actions.QueryHostAction()
 	action.conditions = conditions
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
 	
-def getMetricData(namespace,metricName,labels=[],functions=[]):
+def getMetricData(namespace, metricName, labels=[], functions=[]):
 	action = api_actions.GetMetricDataAction()
 	action.namespace = namespace
 	action.metricName = metricName
@@ -85,6 +85,47 @@ def getMetricData(namespace,metricName,labels=[],functions=[]):
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
 
+def getIpAddressCapacity_all(all=True):
+	action = api_actions.GetIpAddressCapacityAction()
+	action.all = all
+	evt = zs.execute_action_with_session(action,zs.login_as_admin())
+	return evt
+
+def zs_overview():
+	hosts_list = query_host().inventories
+	vm_list = query_vm().inventories
+	vm_running_list = query_vm(conditions=[{'name':'state','op':'=','value':'Running'}]).inventories
+	ps_list = query_primarystorage().inventories
+	bs_list = query_backupstorage().inventories
+	ipc = getIpAddressCapacity_all()
+	title("云平台资源概览")
+	amount_hosts = len(hosts_list)
+	amount_vm = len(vm_list)
+	amount_vm_running = len(vm_running_list)
+	amount_ps = len(ps_list)
+	amount_bs = len(bs_list)
+	
+	print '''物理机数量: %d\n云主机数量: %d\n运行中云主机数量: %d\n主存储数量: %d\n镜像服务器数量: %d\nIP地址总量: %s\n可用IP地址量: %s''' % (amount_hosts, amount_vm, amount_vm_running, amount_ps, amount_bs, ipc.totalCapacity, ipc.availableCapacity)
+	#Print running_vm information
+	overview_information_print("运行中云主机概览", vm_running_list, attrs={'名称':'name', 'uuid':'uuid', 'CPU':'cpuNum', '内存':'memorySize'})
+	#Print ps information
+	overview_information_print("主存储概览", ps_list, attrs={'名称':'name', 'uuid':'uuid', '可用容量':'availableCapacity', '可用物理容量':'availablePhysicalCapacity'})		
+	#Print bs information
+	overview_information_print("镜像服务器概览", bs_list, attrs={'名称':'name', 'uuid':'uuid', '可用容量':'availableCapacity'})
+	
+def overview_information_print(title_str, resource_list, attrs={'名称':'name', 'uuid':'uuid'}):
+	if len(resource_list):
+		count = 0
+		title(title_str)
+		for r in resource_list :
+			information_line = ""
+			for name in attrs.keys():
+				information_line = information_line + "%s: %s\t" % (name, r[attrs[name]])
+			print "%s.%s" % (str(count+1), information_line)
+			count += 1
+		return len(resource_list)
+	return 0
+	
 def query_byLastOpDate_vm():
 	count = 1
 	query_days_num = 90
@@ -106,13 +147,16 @@ def query_largestActualSize_vm():
 	title("占用物理存储最多的云主机TOP5")
 	vm_list = query_vm(conditions=[{'name':'type','op':'=','value':'UserVm'},{'name':'hypervisorType','op':'=','value':'KVM'}]).inventories
 	vm_list.sort(cmp=None, key=lambda x:x.allVolumes[0].actualSize, reverse=True)
-	if len(vm_list)<5:
+	if not len(vm_list):
+		print "环境中没有云主机"
+		return 0
+	elif len(vm_list)<5:
 		top = len(vm_list)
-	while count<top:
-		#get_attached_vm
-		print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),vm_list[count].name,vm_list[count].uuid,unit_rec(vm_list[count].allVolumes[0].actualSize))
-		count += 1
-	return vm_list[0].uuid 
+		while count<top:
+			#get_attached_vm
+			print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),vm_list[count].name,vm_list[count].uuid,unit_rec(vm_list[count].allVolumes[0].actualSize))
+			count += 1
+		return vm_list[0].uuid
 	
 def query_largestActualSize_dv():
 	count = 0
@@ -120,13 +164,16 @@ def query_largestActualSize_dv():
 	title("占用物理存储最多的云盘TOP5")
 	data_volume_list = query_vol(conditions=[{'name':'type','op':'=','value':'Data'},{'name':'format','op':'!=','value':'vmtx'}]).inventories
 	data_volume_list.sort(cmp=None, key=lambda x:x.actualSize, reverse=True)
-	if len(data_volume_list)<5:
+	if not len(data_volume_list):
+		print "环境中没有数据云盘"
+		return 0
+	elif len(data_volume_list)<5:
 		top = len(data_volume_list)
-	while count<top:
-		#largest_actualsize_data_volume
-		print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),data_volume_list[count].name,data_volume_list[count].uuid,unit_rec(data_volume_list[count].actualSize))
-		count += 1
-	return data_volume_list[0].uuid
+		while count<top:
+			#largest_actualsize_data_volume
+			print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),data_volume_list[count].name,data_volume_list[count].uuid,unit_rec(data_volume_list[count].actualSize))
+			count += 1
+		return data_volume_list[0].uuid
 
 def query_largestActualSize_topTen_img():
 	count = 0
@@ -134,12 +181,15 @@ def query_largestActualSize_topTen_img():
 	title("占用物理存储最多的镜像TOP10")
 	img_list = query_img(conditions=[{'name':'type','op':'=','value':'zstack'}],parameters=[{'name':'fields','op':'=','value':['uuid','name','actualSize']}]).inventories
 	img_list.sort(cmp=None, key=lambda x:x.actualSize, reverse=True)
-	if len(img_list)<10:
+	if not len(img_list):
+		print "环境中没有镜像"
+		return 0
+	elif len(img_list)<10:
 		top = len(img_list)
-	while count<top:
-		print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),img_list[count].name,img_list[count].uuid,unit_rec(img_list[count].actualSize))
-		count += 1
-	return len(img_list)
+		while count<top:
+			print "%s.名称:%s\tuuid:%s\n  占用物理容量:%s" % (str(count+1),img_list[count].name,img_list[count].uuid,unit_rec(img_list[count].actualSize))
+			count += 1
+		return len(img_list)
 	
 def get_cpuOccupancyRateHigh_vm(threshold):
 	uservm_list = query_vm(conditions=[{'name':'state','op':'=','value':'Running'},{'name':'type','op':'=','value':'UserVm'},{'name':'hypervisorType','op':'=','value':'KVM'}],parameters=[{'name':'fields','op':'=','value':['uuid','name']}]).inventories
@@ -413,4 +463,3 @@ def CephPSMonsCheck():
 				print "  所有Mon节点连接正常"
 	else:
 		print "没有Ceph类型主存储"
-
