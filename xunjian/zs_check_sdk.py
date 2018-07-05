@@ -351,7 +351,7 @@ def print_unattached_datavol_list():
 		print "无未加载状态的云盘"
 
 def print_abnormalStateVm_lists():	
-	nonRunning_state_vm_list = query_vm(conditions=[{'name':'state','op':'!=','value':'Running'},{'name':'type','op':'=','value':'UserVm'},{'name':'hypervisorType','op':'=','value':'KVM'}]).inventories
+	nonRunning_state_vm_list = query_vm(conditions=[{'name':'state','op':'!=','value':'Running'},{'name':'type','op':'=','value':'UserVm'}]).inventories
 	#dict_vm_state
 	vm_states={
 	'已停止':'Stopped',

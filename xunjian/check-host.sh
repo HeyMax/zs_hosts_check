@@ -727,7 +727,7 @@ function getHardwareinformation(){
 	#硬件信息
 	echo ""
     echo ""
-    echo "############################ 系统信息概览	#############################"
+    echo "############################ 系统信息概览 #############################"
 	echo -e "\nHostname:\^"$(hostname)\
 		"BIOS:\^"$(dmidecode -s bios-vendor) $(dmidecode -s bios-version) $(dmidecode -s bios-release-date)\
 		"\nOS:\^"$(cat /etc/redhat-release),$(uname -srm)\
