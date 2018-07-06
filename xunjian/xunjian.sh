@@ -1,8 +1,31 @@
 #!/bin/sh
+usage(){
+	echo "Usage: bash $0 -p [MN_admin_password]"
+	exit 77
+}
+
+python ./idrsa_asbc.py
+
+while getopts "p:a:" opt;
+do
+	case $opt in
+	  p )
+	     sed -i "s/^user_password = .*/user_password = \'$OPTARG\'/g" zs_api_sdk.py
+	     ;;
+	  
+	  a )
+		 sed -i "s/$/& ansible_ssh_port=$OPTARG/g" ansible.conf
+		 ;;
+		 
+	  * )
+	     usage
+	     ;;
+	esac
+done
+
+
 rm -rf /root/log/
 DATE_START=$(date +%s)
-python ./idrsa_asbc.py
-sed 's/$/& ansible_ssh_port=22/g' ansible.conf
 ansible-playbook check-host.yaml -i ./ansible.conf
 bash zs_check.sh
 DATE_FINISH=$(date +%s)
