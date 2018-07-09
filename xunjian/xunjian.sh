@@ -1,28 +1,27 @@
 #!/bin/sh
 usage(){
-	echo "Usage: bash $0 -p [MN_admin_password]"
+	echo "Usage: bash $0 -p [MN_admin_password] -a [ssh_port] -c [cluster_uuid_1,cluster_uuid_2,...]"
 	exit 77
 }
 
-python ./idrsa_asbc.py
+python ./ssh_info.py
 
-while getopts "p:a:" opt;
+while getopts "p:c:" opt;
 do
 	case $opt in
 	  p )
 	     sed -i "s/^user_password = .*/user_password = \'$OPTARG\'/g" zs_api_sdk.py
 	     ;;
-	  
-	  a )
-		 sed -i "s/$/& ansible_ssh_port=$OPTARG/g" ansible.conf
-		 ;;
+
+	  c )
+         python ./ssh_info.py $OPTARG
+         ;; 
 		 
 	  * )
 	     usage
 	     ;;
 	esac
 done
-
 
 rm -rf /root/log/
 DATE_START=$(date +%s)
