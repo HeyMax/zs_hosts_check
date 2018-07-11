@@ -351,7 +351,7 @@ def print_unattached_datavol_list():
 		print "无未加载状态的云盘"
 
 def print_abnormalStateVm_lists():	
-	nonRunning_state_vm_list = query_vm(conditions=[{'name':'state','op':'!=','value':'Running'},{'name':'type','op':'=','value':'UserVm'}]).inventories
+	nonRunning_state_vm_list = query_vm(conditions=[{'name':'state','op':'!=','value':'Running'},{'name':'type','op':'=','value':'UserVm'},{'name':'hypervisorType','op':'=','value':'KVM'}]).inventories
 	#dict_vm_state
 	vm_states={
 	'已停止':'Stopped',
@@ -452,7 +452,7 @@ def CephPSMonsCheck():
 	title("Ceph主存储Mons检查")
 	if len(ceph_PS_list):
 		for ps in ceph_PS_list:
-			print "%s.名称:%s\tuuid:%s" % (str(count+1),ps.name,ps.uuid)
+			print "%s.名称:%s\tuuid:%s" % (str(count+1), ps.name, ps.uuid)
 			disconn_mon = 0
 			count += 1
 			for mon in ps.mons:
@@ -461,5 +461,24 @@ def CephPSMonsCheck():
 					print "  Warning:%s已失联" % mon['monAddr']
 			if disconn_mon == 0:
 				print "  所有Mon节点连接正常"
+		count = 0
+		title("Ceph存储状态检查")
+		for ps in ceph_PS_list:
+			if ps.status != 'Disconnected':
+				print "%s.%s状态检查:" % (str(count+1), ps.name)
+				for mon in ps.mons:
+					if mon['status'] != 'Disconnected':
+						CephPSHealthCheck(mon.sshPassword, mon.sshPort, mon.sshUsername, mon.hostname)
+						break
+			else:
+				print "%s.%s已失联" % (str(count+1), ps.name)
+			count += 1
 	else:
 		print "没有Ceph类型主存储"
+		
+def CephPSHealthCheck(mon_pswd, ssh_port, ssh_username,mon_ip):
+	check_inv = ['ceph -s', 'ceph osd tree', 'ceph df']
+	check_cmd_inv = map(lambda cmd: 'sshpass -p ' + mon_pswd + ' ssh -o StrictHostKeyChecking=no -p ' + str(ssh_port) + ' ' + ssh_username +'@' + mon_ip +' \"' + cmd + '\"', check_inv)
+	for index in range(0, len(check_inv)):
+		print "(%s)%s检查:" % (str(index+1), check_inv[index])
+		print os.popen(check_cmd_inv[index]).read()

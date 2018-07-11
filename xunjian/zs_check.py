@@ -74,8 +74,8 @@ if __name__ == "__main__":
 	os.system('clear')
 	
 	#printAvailableCapacityShortPS/BS
-	CSPS = 90
-	CSBS = 90
+	CSPS = 80
+	CSBS = 80
 	resultGetCapacityShortPrimaryStorage = check.GetCapacityShortPrimaryStorage(CSPS)
 	resultGetCapacityShortBackupStorage = check.GetCapacityShortBackupStorage(CSBS)
 	time.sleep(10)

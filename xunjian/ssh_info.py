@@ -39,10 +39,9 @@ def ssh_info_generate(cluster_uuid_list=[]):
 	while count < len(host_ips):
 		userpassword_kvs.append("".join(host_ips[count]+" ansible_ssh_user=" + host_usernames[count][0] + " ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa ansible_ssh_port=" + host_usernames[count][2] ))
 		count += 1
-	#mn_ip=os.popen('cat /usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/zstack.properties |grep management').read().split(' = ')[1].split("\n")[0]
-	#print mn_ip
+	#mn_dump
+	os.system("bash crontab_dump.sh %s %s" % (host_ips[1], host_usernames[1][1]))
 	kvs_str = "\n".join(userpassword_kvs)
-	# + "\n" +mn_ip+ " ansible_ssh_user=root ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa"
 	return kvs_str
 
 def get_cluster_uuid_list():
@@ -54,7 +53,11 @@ def get_cluster_uuid_list():
 	return cluster_uuid_list
 
 if __name__ == '__main__':
-	file_asbc = open('ansible.conf','w')
-	file_asbc.write(ssh_info_generate(get_cluster_uuid_list()))
-	file_asbc.close()
+	try:
+		file_asbc = open('ansible.conf','w')
+		file_asbc.write(ssh_info_generate(get_cluster_uuid_list()))
+	except Exception as e:
+		print e
+	finally:
+		file_asbc.close()
 	# os.system("sort -k2n inventory|uniq")
