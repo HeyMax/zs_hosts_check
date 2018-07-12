@@ -37,7 +37,7 @@ def ssh_info_generate(cluster_uuid_list=[]):
 	count = 0
 	userpassword_kvs = []
 	while count < len(host_ips):
-		userpassword_kvs.append("".join(host_ips[count]+" ansible_ssh_user=" + host_usernames[count][0] + " ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa ansible_ssh_port=" + host_usernames[count][2] ))
+		userpassword_kvs.append("".join(host_ips[count]+" ansible_ssh_user=" + host_usernames[count][0] + " ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa ansible_ssh_port=" + host_usernames[count][2] + " ansible_sudo_pass=" + host_usernames[count][1]))
 		count += 1
 	#mn_dump
 	os.system("bash crontab_dump.sh %s %s" % (host_ips[1], host_usernames[1][1]))

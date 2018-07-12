@@ -75,6 +75,13 @@ def query_host(conditions=[], parameters=[]):
 	action.parameters = parameters
 	evt = zs.execute_action_with_session(action,zs.login_as_admin())
 	return evt
+
+def query_shareable_volume_vminstance_ref(conditions=[], parameters=[]):
+	action = api_actions.QueryShareableVolumeVmInstanceRefAction()
+	action.conditions = conditions
+	action.parameters = parameters
+	evt = zs.execute_action_with_session(action,zs.login_as_admin())
+	return evt
 	
 def getMetricData(namespace, metricName, labels=[], functions=[]):
 	action = api_actions.GetMetricDataAction()
@@ -340,6 +347,13 @@ def print_highLoadHosts_list(tc,tm,td,host_cpuhl_list,host_memhl_list,host_diskh
 
 def print_unattached_datavol_list():
 	unAttachedDVList = query_vol(conditions=[{'name':'vmInstanceUuid','op':'is null'},{'name':'type','op':'=','value':'Data'}]).inventories
+	def unAttachedDVolume(dv):
+		if dv.isShareable != True:
+			return True
+		elif not query_shareable_volume_vminstance_ref(conditions=[{'name':'volumeUuid','op':'=','value':dv.uuid}]).inventories:
+			return True
+		return False
+	unAttachedDVList = filter(unAttachedDVolume, unAttachedDVList)
 	count = 1
 	title("未加载状态的云盘")
 	if len(unAttachedDVList):
