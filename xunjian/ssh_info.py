@@ -1,4 +1,5 @@
 import os,sys
+import logging
 
 def ssh_info_generate(cluster_uuid_list=[]):
 	query1 = 'echo "select managementIp from HostVO where hypervisorType = \'KVM\''
@@ -40,7 +41,8 @@ def ssh_info_generate(cluster_uuid_list=[]):
 		userpassword_kvs.append("".join(host_ips[count]+" ansible_ssh_user=" + host_usernames[count][0] + " ansible_ssh_private_key_file=/usr/local/zstack/apache-tomcat/webapps/zstack/WEB-INF/classes/ansible/rsaKeys/id_rsa ansible_ssh_port=" + host_usernames[count][2] + " ansible_sudo_pass=" + host_usernames[count][1]))
 		count += 1
 	#mn_dump
-	os.system("bash crontab_dump.sh %s %s" % (host_ips[1], host_usernames[1][1]))
+	if len(host_ips) > 1:
+		os.system("bash crontab_dump.sh %s %s" % (host_ips[1], host_usernames[1][1]))
 	kvs_str = "\n".join(userpassword_kvs)
 	return kvs_str
 
@@ -57,7 +59,7 @@ if __name__ == '__main__':
 		file_asbc = open('ansible.conf','w')
 		file_asbc.write(ssh_info_generate(get_cluster_uuid_list()))
 	except Exception as e:
-		print e
+		print logging.exception(e)
 	finally:
 		file_asbc.close()
 	# os.system("sort -k2n inventory|uniq")

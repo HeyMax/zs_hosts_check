@@ -224,8 +224,8 @@ function getHealthStatus(){
     cpu_num=`grep -c 'model name' /proc/cpuinfo`
     free -m |awk 'NR==2 {if($3*100/$2 >=80) printf "警告：内存使用超过80%, 当前使用率为 %.2f%, 总内存 %dMB, 已用内存 %dMB\n", $3*100/$2,$2,$3}'
     free -m |awk 'NR==3 {if($3*100/$2 >=20) printf "警告：Swap使用超过20%, 当前使用率为 %.2f%, 总计 %dMB, 已用 %dMB\n", $3*100/$2,$2,$3}'
-    df -hTP | awk '{if($6+0 >= 80) printf "警告：%s 分区使用超过80%, 总容量 %s, 已用 %s, 可用 %s \n",$NF,$3,$4,$5}'|column -t
-    df -hiP | awk '{if($5+0 >= 90) printf "警告：%s Inodes使用超过90%, 已用 %s, 可用 %s\n",$1,$3,$4 }'|column -t
+    df -hTP | awk '{if($6+0 >= 80) printf "警告：%s 分区使用超过80%, 总容量 %s, 已用 %s, 可用 %s \n",$NF,$3,$4,$5}'|column -t | grep -v iso
+    df -hiP | awk '{if($5+0 >= 90) printf "警告：%s Inodes使用超过90%, 已用 %s, 可用 %s\n",$1,$3,$4 }'|column -t | grep -v iso
     echo ""
     echo ""
     echo "########################### dmesg 状态检查 ###########################"
