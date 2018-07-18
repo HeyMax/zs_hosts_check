@@ -21,7 +21,7 @@ import hashlib
 
 zstack_server_ip = os.environ['ZS_SERVER_IP']
 user_name = 'admin'
-user_password = 'password'
+user_password = 'ming'
 
 #For user's program: must keep
 def sync_call(apicmd, session_uuid):
