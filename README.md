@@ -1,4 +1,4 @@
-# zs_hosts_check  
+# ZS巡检工具  
 ZStack物理机状态巡检工具  
 
 ## 帮助
@@ -9,5 +9,5 @@ ZStack物理机状态巡检工具
     #获取帮助
     cd /root/xunjian/ && bash xunjian.sh -h 
     
-    #使用
+    #使用 (不指定-c参数则对所有集群进行巡检)
     bash xunjian.sh -p [password] -c [cluster_uuid_1,cluster_uuid_2]
